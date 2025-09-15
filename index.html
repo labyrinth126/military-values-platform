@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>軍人核心價值觀實踐平台</title>
+    <style>
+        /* CSS 樣式 */
+        body { font-family: 'Helvetica Neue', 'Microsoft JhengHei', sans-serif; background-color: #f0f2f5; margin: 0; color: #333; }
+        .container { width: 100%; max-width: 1200px; margin: 20px auto; background-color: #fff; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); overflow: hidden; }
+        #notification { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); padding: 15px 30px; border-radius: 8px; color: white; font-size: 1.1em; z-index: 2000; transition: top 0.5s ease-in-out; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        #notification.show { top: 20px; }
+        #notification.success { background-color: #28a745; }
+        #notification.error { background-color: #dc3545; }
+        #login-screen { padding: 50px; text-align: center; }
+        #login-screen h1 { color: #003366; }
+        #login-screen select, #login-screen input { width: 80%; max-width: 300px; padding: 12px; margin-top: 15px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; }
+        #login-screen button { padding: 12px 30px; font-size: 1.1em; margin-top: 20px; background-color: #005a9c; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        #login-screen button:hover { background-color: #003366; }
+        #app-screen { display: none; }
+        header { background-color: #003366; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        header h1 { margin: 0; font-size: 1.5em; }
+        header #user-info { font-size: 1em; }
+        header #logout-btn { background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        main { display: flex; }
+        .sidebar { width: 250px; background: #f8f9fa; padding: 20px; border-right: 1px solid #e0e0e0; }
+        .sidebar h2 { margin-top: 0; }
+        .values-list { list-style: none; padding: 0; margin: 0; }
+        .values-list li { padding: 12px; margin-bottom: 8px; background: #e9ecef; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        .values-list li:hover, .values-list li.active { background-color: #005a9c; color: white; }
+        .content { flex: 1; padding: 30px; max-height: 85vh; overflow-y: auto; }
+        #action-submission-area button { padding: 12px 25px; font-size: 1em; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .action-card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        .action-card-header { display: flex; justify-content: space-between; align-items: center; }
+        .author-info .author { font-weight: bold; color: #005a9c; }
+        .author-info .class-tag { display: inline-block; background: #6c757d; color: white; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; margin-left: 8px; }
+        .value-tag { display: inline-block; background: #e9ecef; color: #495057; padding: 5px 10px; border-radius: 15px; font-size: 0.9em; }
+        .action-text { margin-top: 15px; font-size: 1.1em; line-height: 1.6; }
+        .action-footer { margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; display: flex; align-items: center; }
+        .like-button { cursor: pointer; padding: 8px 15px; border-radius: 20px; background-color: #e9ecef; transition: background-color 0.3s; border: 1px solid #ddd; }
+        .like-button:hover { background-color: #d4d9de; }
+        .like-button.liked { background-color: #007bff; color: white; cursor: not-allowed; border-color: #007bff; }
+        .like-button:disabled { background-color: #f8f9fa; color: #6c757d; cursor: default; border-color: #e9ecef; }
+        #filter-area { margin-bottom: 20px; }
+        #filter-area label { font-weight: bold; margin-right: 10px; }
+        #filter-area select { padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-size: 1em; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 600px; text-align: center; }
+        .modal-content textarea { width: 100%; height: 150px; margin: 20px 0; padding: 10px; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; margin: 0 10px; }
+        #submit-action-btn { background-color: #005a9c; color: white; }
+        #submit-action-btn:disabled { background-color: #6c757d; cursor: not-allowed; }
+        #cancel-action-btn { background-color: #ccc; }
+    </style>
+</head>
+<body>
+    <div id="notification"></div>
+
+    <div class="container">
+        <div id="login-screen">
+            <h1>軍人核心價值觀實踐平台</h1>
+            <select id="class-select">
+                <option value="">-- 請選擇班級 --</option>
+                <option value="2教授班">2教授班</option>
+                <option value="5教授班">5教授班</option>
+                <option value="8教授班">8教授班</option>
+                <option value="9教授班">9教授班</option>
+            </select>
+            <input type="text" id="student-id-input" placeholder="請輸入您的學號">
+            <br>
+            <button onclick="enterPlatform()">進入平台</button>
+        </div>
+
+        <div id="app-screen">
+            <header>
+                <h1>核心價值觀實踐</h1>
+                <div>
+                    <span id="user-info"></span>
+                    <button id="logout-btn" onclick="logout()">離開</button>
+                </div>
+            </header>
+            <main>
+                <aside class="sidebar">
+                    <h2>十大核心價值</h2>
+                    <ul class="values-list" id="values-list"></ul>
+                </aside>
+                <section class="content" id="content-area">
+                    <div id="action-submission-area">
+                        <h2 id="current-value-title">請選擇一個價值觀</h2>
+                        <p id="current-value-desc"></p>
+                        <button id="write-action-btn" onclick="openWriteModal()" style="display: none;">我要撰寫具體行動</button>
+                    </div>
+                    <hr>
+                    <div id="filter-area">
+                        <label for="class-filter">篩選班級:</label>
+                        <select id="class-filter" onchange="filterActions()">
+                            <option value="all">所有班級</option>
+                            <option value="2教授班">2教授班</option>
+                            <option value="5教授班">5教授班</option>
+                            <option value="8教授班">8教授班</option>
+                            <option value="9教授班">9教授班</option>
+                        </select>
+                    </div>
+                    <div id="actions-display-area">
+                        <h3>大家的實踐分享</h3>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div id="write-action-modal" class="modal">
+        <div class="modal-content">
+            <h2>撰寫 <span id="modal-value-name"></span> 的具體行動</h2>
+            <textarea id="action-textarea" placeholder="請描述具體行動..."></textarea>
+            <div class="modal-buttons">
+                <button id="cancel-action-btn" onclick="closeWriteModal()">取消</button>
+                <button id="submit-action-btn" onclick="submitAction()">提交</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script>
+        // ==================================================================
+        // ===== 您提供的 Firebase 設定碼已整合在此處 =====
+        // ==================================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAyv_LTTc8NyKaRUgQsxHEVPQKg5msjbP8",
+            authDomain: "military-core-values.firebaseapp.com",
+            projectId: "military-core-values",
+            storageBucket: "military-core-values.appspot.com", // 已為您修正為標準格式
+            messagingSenderId: "16059765404",
+            appId: "1:16059765404:web:dd1a1b894fdfe775ba9359",
+            measurementId: "G-NZ1HBTWHMG"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+    
+    <script>
+        // ==================================================================
+        // ===== 所有互動功能的 JavaScript 程式碼都在這裡 =====
+        // ==================================================================
+        const coreValues = { "忠誠": "忠於國家、忠於團隊。", "責任": "勇於承擔、全力以赴。", "榮譽": "言行光明、誠實無欺。", "犧牲": "為國為民、奉獻自我。", "團結": "互助合作、凝聚力量。", "服從": "遵守命令、貫徹執行。", "紀律": "嚴守法規、恪遵準則。", "勇氣": "面對危難、無所畏懼。", "自信": "相信專業、肯定自我。", "誠信": "言行一致、誠實可靠。" };
+        let userClass = null, userStudentId = null, selectedValue = null, unsubscribe, userLikes = new Set(), notificationTimeout;
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = type;
+            if (notificationTimeout) clearTimeout(notificationTimeout);
+            notification.classList.add('show');
+            notificationTimeout = setTimeout(() => { notification.classList.remove('show'); }, 3000);
+        }
+
+        function enterPlatform() {
+            const selectedClass = document.getElementById('class-select').value;
+            const studentId = document.getElementById('student-id-input').value;
+            if (!selectedClass) { showNotification('請選擇您的班級！', 'error'); return; }
+            if (studentId.trim() === '') { showNotification('請輸入您的學號！', 'error'); return; }
+            userClass = selectedClass;
+            userStudentId = studentId.trim();
+            document.getElementById('class-filter').value = userClass;
+            document.getElementById('user-info').innerText = `班級: ${userClass} | 學號: ${userStudentId}`;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'block';
+            initializeApp();
+        }
+
+        function logout() {
+            userClass = null;
+            userStudentId = null;
+            if (unsubscribe) unsubscribe();
+            document.getElementById('class-select').value = '';
+            document.getElementById('student-id-input').value = '';
+            document.getElementById('login-screen').style.display = 'block';
+            document.getElementById('app-screen').style.display = 'none';
+        }
+
+        function initializeApp() {
+            loadLikesFromLocalStorage();
+            const valuesList = document.getElementById('values-list');
+            valuesList.innerHTML = '';
+            Object.keys(coreValues).forEach(value => {
+                const li = document.createElement('li');
+                li.innerText = value;
+                li.onclick = () => selectValue(value);
+                valuesList.appendChild(li);
+            });
+            filterActions();
+        }
+
+        function filterActions() {
+            if (unsubscribe) unsubscribe();
+            const selectedClass = document.getElementById('class-filter').value;
+            let query = db.collection('actions').orderBy('createdAt', 'desc');
+            if (selectedClass !== 'all') {
+                query = query.where('class', '==', selectedClass);
+            }
+            unsubscribe = query.onSnapshot(snapshot => {
+                const actions = [];
+                snapshot.forEach(doc => { actions.push({ id: doc.id, ...doc.data() }); });
+                renderActions(actions);
+            }, error => {
+                console.error("讀取資料失敗: ", error);
+                showNotification("無法讀取資料，請檢查 Firebase 設定或網路。", 'error');
+            });
+        }
+        
+        function renderActions(actionsData) {
+            const displayArea = document.getElementById('actions-display-area');
+            displayArea.innerHTML = '<h3>大家的實踐分享</h3>';
+            if (actionsData.length === 0) { displayArea.innerHTML += '<p>這個分類目前沒有分享。</p>'; return; }
+            actionsData.forEach(action => {
+                const card = document.createElement('div');
+                card.className = 'action-card';
+                const isLiked = userLikes.has(action.id);
+                const isOwnPost = action.authorId === userStudentId;
+                let likeButtonHTML;
+                if (isOwnPost) {
+                    likeButtonHTML = `<button class="like-button" disabled title="這是您自己的文章">👍 ${action.likes || 0}</button>`;
+                } else {
+                    likeButtonHTML = `<button class="like-button ${isLiked ? 'liked' : ''}" onclick="likeAction('${action.id}', '${action.authorId}', this)" ${isLiked ? 'disabled' : ''}>👍 ${action.likes || 0}</button>`;
+                }
+                card.innerHTML = `<div class="action-card-header"><div class="author-info"><span class="author">${action.authorId}</span><span class="class-tag">${action.class}</span></div><span class="value-tag">${action.value}</span></div><p class="action-text">${action.text}</p><div class="action-footer">${likeButtonHTML}</div>`;
+                displayArea.appendChild(card);
+            });
+        }
+
+        function selectValue(value) {
+            selectedValue = value;
+            document.getElementById('current-value-title').innerText = `當前價值觀：${value}`;
+            document.getElementById('current-value-desc').innerText = coreValues[value];
+            document.getElementById('write-action-btn').style.display = 'inline-block';
+            document.querySelectorAll('#values-list li').forEach(li => { li.classList.remove('active'); });
+            event.target.classList.add('active');
+        }
+
+        async function submitAction() {
+            const text = document.getElementById('action-textarea').value;
+            const submitBtn = document.getElementById('submit-action-btn');
+            if (!selectedValue) { showNotification('請先選擇一個價值觀！', 'error'); return; }
+            if (text.trim() === '') { showNotification('請填寫具體行動！', 'error'); return; }
+            submitBtn.disabled = true;
+            submitBtn.innerText = '提交中...';
+            try {
+                const querySnapshot = await db.collection('actions').where('authorId', '==', userStudentId).get();
+                if (!querySnapshot.empty) {
+                    showNotification('您已經提交過具體行動，無法重複提交。', 'error');
+                    closeWriteModal();
+                    return;
+                }
+                await db.collection('actions').add({ authorId: userStudentId, class: userClass, value: selectedValue, text: text, likes: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                closeWriteModal();
+                showNotification('提交成功！', 'success');
+            } catch (error) {
+                console.error("提交失敗: ", error);
+                showNotification('提交失敗：' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = '提交';
+            }
+        }
+
+        function likeAction(actionId, authorId, buttonElement) {
+            if (authorId === userStudentId) { showNotification('無法對自己的文章點讚。', 'error'); return; }
+            if (userLikes.has(actionId)) { showNotification("您已經點過讚了。", 'error'); return; }
+            const actionRef = db.collection('actions').doc(actionId);
+            actionRef.update({ likes: firebase.firestore.FieldValue.increment(1) })
+            .then(() => {
+                userLikes.add(actionId);
+                saveLikesToLocalStorage();
+                buttonElement.classList.add('liked');
+                buttonElement.disabled = true;
+                const currentLikes = parseInt(buttonElement.innerText.replace('👍', '').trim());
+                buttonElement.innerText = `👍 ${currentLikes + 1}`;
+            })
+            .catch(error => {
+                console.error("點讚失敗: ", error);
+                showNotification("點讚失敗，請稍後再試。", 'error');
+            });
+        }
+        
+        function loadLikesFromLocalStorage() { const likedPosts = localStorage.getItem('likedPosts'); if (likedPosts) { userLikes = new Set(JSON.parse(likedPosts)); } else { userLikes = new Set(); } }
+        function saveLikesToLocalStorage() { localStorage.setItem('likedPosts', JSON.stringify(Array.from(userLikes))); }
+        function openWriteModal() { if (!selectedValue) { showNotification('請先選擇一個價值觀！', 'error'); return; } document.getElementById('modal-value-name').innerText = selectedValue; document.getElementById('write-action-modal').style.display = 'flex'; }
+        function closeWriteModal() { document.getElementById('action-textarea').value = ''; document.getElementById('write-action-modal').style.display = 'none'; }
+    </script>
+</body>
+</html>
